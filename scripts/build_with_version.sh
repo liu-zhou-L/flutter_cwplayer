@@ -1,9 +1,18 @@
 #!/bin/bash
 # ============================================================
-# build_with_version.sh
+# build_with_version.sh [--base-href /path/]
 # 执行 flutter build web，并自动注入 git commit 版本信息
+# --base-href: 部署路径，如 /flutter_cwplayer/（默认 /）
 # ============================================================
 set -e
+
+BASE_HREF="/"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --base-href) BASE_HREF="$2"; shift 2 ;;
+    *) echo "未知参数: $1"; exit 1 ;;
+  esac
+done
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="$PROJECT_DIR/build/web"
@@ -16,10 +25,11 @@ BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 echo "  Commit: $COMMIT_HASH"
 echo "  Time:   $BUILD_TIME"
+echo "  Base:   $BASE_HREF"
 
 echo ""
 echo "=== 2. Flutter Web 构建 ==="
-flutter build web --release
+flutter build web --release --base-href "$BASE_HREF"
 
 echo ""
 echo "=== 3. 注入版本信息到 build/web/index.html ==="
