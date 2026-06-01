@@ -124,6 +124,32 @@ flutter analyze
 
 点击键位绑定面板中的「编辑」图标，按下所需键盘按键即可完成绑定。
 
+## 构建与部署
+
+项目提供了自动化脚本来构建带版本信息的 Web 产物，并部署到 `website` 分支。
+
+### 构建（含版本注入）
+
+```bash
+# 自动执行 flutter build web + 注入 commit hash
+./scripts/build_with_version.sh
+```
+
+构建完成后会在 `build/web/` 中生成：
+- `index.html` — 注入 `<meta name="cw-version" content="<commit-hash>">`
+- `version.json` — 包含 commit、构建时间等完整版本信息
+
+### 部署到 website 分支
+
+```bash
+# 将 build/web 内容推送到远程 website 分支
+./scripts/deploy_website.sh
+```
+
+使用 `git worktree` 实现，不影响当前工作分支。首次运行会自动创建 `website` 分支；后续运行会更新并强制推送。
+
+> GitHub Pages / GitLab Pages 可配置指向 `website` 分支实现静态站点托管。
+
 ## 平台支持
 
 | 平台 | 音频 | 交互 |
