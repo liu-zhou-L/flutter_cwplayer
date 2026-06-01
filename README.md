@@ -10,7 +10,7 @@
   - **自动键**：单击产生一个信号，长按连续重复输出
 - **双输入源**：鼠标（点击 + 键盘）/ 触摸屏适配
 - **可自定义键位**：点信号（Dit）与划信号（Dash）支持键盘重新绑定
-- **实时蜂鸣音效**：Web Audio API 生成 1000Hz 正弦波，手动键支持连续蜂鸣
+- **实时蜂鸣音效**：`dart:js_interop` 扩展类型调用 Web Audio API，700Hz 真实 CW 音调，硬开关无拖尾
 - **参数灵活可调**：点信号时长、自动键重复间隔、手动键长按阈值、字符间隔、单词间隔、音量等
 - **配置持久化**：通过 `shared_preferences` 保存用户设置
 - **蒸汽朋克 UI**：黄铜/铜色调、齿轮装饰、暗色主题
@@ -32,7 +32,7 @@ lib/
 │   ├── morse_codec.dart               # 莫尔斯码字典 & 枚举定义
 │   └── player_config.dart             # 播放器配置数据模型
 ├── services/
-│   ├── audio_service.dart             # Web Audio API 封装（点播/连续蜂鸣）
+│   ├── audio_service.dart             # dart:js_interop 封装 Web Audio API（700Hz / 硬开关）
 │   └── storage_service.dart           # SharedPreferences 配置读写
 ├── theme/
 │   └── steampunk_theme.dart           # 蒸汽朋克主题（调色板/文字样式/齿轮装饰）
@@ -52,11 +52,12 @@ lib/
 
 | 原则 | 体现 |
 |------|------|
-| **单一职责** | 每个文件/类只负责一个领域（模型/服务/UI组件） |
+| **单一职责** | 模型/服务/UI 组件各司其职，11 个模块文件 |
 | **依赖注入** | `AudioService` 和 `StorageService` 由 `CWPlayer` 创建并管理生命周期 |
-| **配置模型化** | `PlayerConfig` 封装所有可配置参数，支持 copy/reset 操作 |
-| **主题集中化** | `SteampunkTheme` 统一管理颜色、文字样式、装饰器 |
-| **状态最小化** | UI 组件多为 StatelessWidget，状态集中在 `CWPlayer` |
+| **配置模型化** | `PlayerConfig` 封装所有参数，支持 `copy`/`reset` |
+| **主题集中化** | `SteampunkTheme` 统一颜色、文字样式、齿轮装饰 |
+| **JS 互操作** | `dart:js_interop` 扩展类型精确映射 Web Audio API，杜绝名称混淆 |
+| **事件分层** | 半自动/自动用手势竞技场（按钮优先），手动键用 `_suppressPointer` 抑制 |
 
 ## 手动键新逻辑
 
@@ -85,7 +86,7 @@ lib/
 | `morse_code_translator` | 莫尔斯码与字符互转（备用） |
 | `cupertino_icons` | iOS 风格图标 |
 
-> 注：`dart:html` 用于 Web Audio API 音频播放，仅 Web 平台有效。
+> 注：音频通过 `dart:js_interop` 扩展类型调用 Web Audio API，无名称混淆，仅 Web 平台有效。
 
 ## 快速开始
 
@@ -104,16 +105,20 @@ flutter analyze
 
 ### 键控模式
 
-| 模式 | 操作方式 |
-|------|----------|
-| **手动键** | 按下即点，持续按住变划，松开停止 |
-| **半自动键** | 点击输出点/划信号 |
-| **自动键** | 单击一个信号，长按连续重复 |
+| 模式 | 鼠标 | 触摸 | 键盘 |
+|------|------|------|------|
+| **手动键** | 按住 = 点→持续变划 | 按住电键按钮 | 按住绑定键 |
+| **半自动键** | 左键=点 / 右键=划 | 按下按钮即发 | 按下绑定键 |
+| **自动键** | 左键=点 / 右键=划 / 长按连发 | 按住按钮连发 | 按住绑定键连发 |
 
-### 输入方式
+### 技术要点
 
-- **鼠标模式**：屏幕任意位置点击 = 点信号；键盘绑定键输入
-- **触摸模式**：点击屏幕按钮；键盘绑定键仍有效
+| 特性 | 实现 |
+|------|------|
+| 按钮优先 | 半自动/自动模式用 `GestureDetector` 手势竞技场；手动键模式加 `_suppressPointer` 抑制 |
+| 触摸零延迟 | `Listener.onPointerDown` 替代 `GestureDetector.onTap`，按下即触发 |
+| 键盘大小写 | `_keysMatch` 大小写不敏感比较 |
+| 模式切换 | 自动清除当前电码区，避免残留符号错误解码 |
 
 ### 自定义键位
 
