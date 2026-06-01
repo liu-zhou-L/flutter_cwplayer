@@ -6,7 +6,7 @@
 # ============================================================
 set -e
 
-BASE_HREF="/"
+BASE_HREF="/flutter_cwplayer/"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base-href) BASE_HREF="$2"; shift 2 ;;
